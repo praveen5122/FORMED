@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>POD Form</title>
+<style>
+  :root { --bg:#f4f6f8; --card:#fff; --ink:#1c2630; --mut:#5d6b78; --line:#d5dce3; --pri:#0b6e4f; --err:#b3261e; --warn:#8a5a00; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.4 system-ui,Segoe UI,Roboto,sans-serif; }
+  .wrap { max-width:820px; margin:0 auto; padding:16px; }
+  h1 { font-size:20px; margin:8px 0 16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:14px; }
+  label { display:block; font-weight:600; margin:14px 0 4px; }
+  label:first-child { margin-top:0; }
+  .hint { font-weight:400; color:var(--mut); font-size:12px; }
+  select, input[type=text], input[type=number], input[type=file] { width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; font-size:15px; background:#fff; }
+  select:disabled { background:#eef1f4; }
+  input.bad { border-color:var(--err); background:#fde8e6; }
+  .roles { display:flex; gap:8px; }
+  .roles label { flex:1; margin:0; font-weight:600; border:1px solid var(--line); border-radius:8px; padding:10px; text-align:center; cursor:pointer; }
+  .roles input { display:none; }
+  .roles label:has(input:checked) { background:var(--pri); color:#fff; border-color:var(--pri); }
+  .roles.off label { opacity:.5; pointer-events:none; }
+  .tbl { overflow-x:auto; margin-top:8px; }
+  table { border-collapse:collapse; width:100%; min-width:520px; }
+  th, td { border:1px solid var(--line); padding:8px; text-align:left; vertical-align:top; }
+  th { background:#eef1f4; font-size:12px; }
+  td.num { text-align:right; white-space:nowrap; }
+  button { padding:12px 16px; border:0; border-radius:8px; background:var(--pri); color:#fff; font-size:16px; font-weight:600; cursor:pointer; }
+  button.full { width:100%; }
+  button.ghost { background:#eef1f4; color:var(--ink); font-size:14px; padding:8px 12px; }
+  button:disabled { opacity:.5; cursor:default; }
+  #msg { margin-top:14px; padding:10px; border-radius:8px; display:none; white-space:pre-line; }
+  #msg.ok { display:block; background:#e3f4ec; color:#0b5a40; }
+  #msg.err { display:block; background:#fde8e6; color:var(--err); }
+  .note { color:var(--mut); font-size:12px; margin-top:4px; }
+  .warn { color:var(--warn); background:#fff6e0; border-radius:8px; padding:8px 10px; margin-top:8px; font-size:13px; display:none; }
+  .empty { padding:14px; color:var(--mut); text-align:center; }
+  
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>POD Form <span class="hint" id="monthTag"></span></h1>
+
+  <div class="card">
+    <label for="region">1. Region</label>
+    <select id="region" disabled><option value="">Loading...</option></select>
+
+    <label>2. Your role</label>
+    <div class="roles off" id="roles">
+      <label><input type="radio" name="role" value="L0"><span>L0 (BDM/BDE)</span></label>
+      <label><input type="radio" name="role" value="L1"><span>L1</span></label>
+      <label><input type="radio" name="role" value="L2"><span>L2</span></label>
+    </div>
+
+    <label for="who">3. Your name</label>
+    <select id="who" disabled><option value="">Select region and role first</option></select>
+
+    <div id="seatBox" style="display:none">
+      <label for="seat">4. BDM / HQ <span class="hint">whose quantities you are entering</span></label>
+      <select id="seat" disabled><option value="">Select your name first</option></select>
+    </div>
+    <div class="note" id="stkNote"></div>
+  </div>
+
+  <div class="card">
+    <strong>Free &amp; discounted quantities</strong>
+    <div class="hint">For information only. Loaded as soon as you pick your name.</div>
+    <div class="warn" id="warn"></div>
+    <div class="tbl">
+      <table id="tbl">
+        <thead><tr>
+          <th>Stockist</th>
+          <th>Product</th>
+          <th>Free quantity</th>
+          <th>Discounted quantity</th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="4" class="empty">Select your name to load quantities.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <form id="f" class="card" autocomplete="off">
+    <label for="doctor">Doctor <span class="hint" id="docHint"></span></label>
+    <input type="text" id="doctor" list="docList" placeholder="Start typing...">
+    <datalist id="docList"></datalist>
+
+    <label for="chemist">Chemist / Pharmacy <span class="hint" id="chemHint"></span></label>
+    <input type="text" id="chemist" list="chemList" placeholder="Pick or type">
+    <datalist id="chemList"></datalist>
+
+    <label for="entStockist">Stockist</label>
+    <select id="entStockist" disabled><option value="">Select your name first</option></select>
+
+    <label>Free quantity distributed <span class="hint">enter the free qty you gave this doctor / chemist, against each product</span></label>
+    <div class="tbl"><table class="plist"><thead><tr><th>Product</th><th style="width:120px">Free qty given</th></tr></thead>
+      <tbody id="plist"><tr><td colspan="2" class="empty">Select a stockist to see the products.</td></tr></tbody></table></div>
+
+    <label for="pod">POD attachments <span style="color:#b3261e">* required</span> <span class="hint">receipt acknowledged by the chemist/recipient - PDF, JPG or PNG. Up to 10 files or photos, 20 MB each, 25 MB in total</span></label>
+    <input type="file" id="pod" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+    <div class="note" id="podInfo"></div>
+
+    <div style="margin-top:20px"><button type="submit" id="go" class="full">Save this distribution</button></div>
+    <div id="msg"></div>
+    <div class="note">After saving, the quantities stay loaded so you can enter the next doctor / chemist delivery.</div>
+  </form>
+</div>
+
+<script>
+var DATA = { rows: [], month: '' };
+var SEATS = [], ACTIVE = [], PRODUCTS = [], STOCKISTS = [], DOCS = [];
+var loadToken = 0;                       // guards against stale responses when the selection changes
+var entryId = newId();
+var MAX = 20 * 1024 * 1024, MAX_TOTAL = 25 * 1024 * 1024, MAX_FILES = 10, TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+function mb(n) { return (n / 1048576).toFixed(1) + ' MB'; }
+
+var $ = function (id) { return document.getElementById(id); };
+var ROLEKEY = { L0: 'l0', L1: 'l1', L2: 'l2' };
+function newId() { return 'DIST-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase(); }
+function isVacant(s) { s = (s || '').trim().toUpperCase(); return !s || s === 'VACANT' || s === 'NILL'; }
+function uniq(a) { return a.filter(function (v, i) { return a.indexOf(v) === i; }).sort(); }
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+function role() { var r = document.querySelector('input[name=role]:checked'); return r ? r.value : ''; }
+function show(msg, cls) { var m = $('msg'); m.className = cls; m.textContent = msg; }
+function inRegion() { return DATA.rows.filter(function (r) { return r.region === $('region').value; }); }
+function fill(sel, vals, ph, labels) {
+  sel.innerHTML = '';
+  var o = document.createElement('option'); o.value = ''; o.textContent = ph; sel.appendChild(o);
+  vals.forEach(function (t, i) { var e = document.createElement('option'); e.value = t; e.textContent = labels ? labels[i] : t; sel.appendChild(e); });
+  sel.disabled = !vals.length;
+}
+function setTable(html) { $('tbody').innerHTML = html; }
+
+/* ---- load ---- */
+google.script.run
+  .withSuccessHandler(function (d) {
+    DATA = d; $('monthTag').textContent = '(' + d.month + ')';
+    fill($('region'), uniq(d.rows.map(function (r) { return r.region; }).filter(Boolean)), 'Select region');
+  })
+  .withFailureHandler(function (e) { show('Could not load stockist data: ' + e.message, 'err'); })
+  .getBootstrap();
+
+/* ---- cascade ---- */
+$('region').addEventListener('change', function () {
+  $('roles').className = 'roles' + ($('region').value ? '' : ' off');
+  document.querySelectorAll('input[name=role]').forEach(function (r) { r.checked = false; });
+  $('seatBox').style.display = 'none';
+  fill($('who'), [], 'Select region and role first'); fill($('seat'), [], 'Select your name first');
+  clearAll();
+});
+document.querySelectorAll('input[name=role]').forEach(function (r) {
+  r.addEventListener('change', function () {
+    var k = ROLEKEY[role()];
+    $('seatBox').style.display = role() === 'L0' ? 'none' : 'block';
+    var names = uniq(inRegion().map(function (x) { return x[k].trim(); }).filter(function (n) { return !isVacant(n); }));
+    fill($('who'), names, names.length ? 'Select your name' : 'No ' + role() + ' in this region');
+    fill($('seat'), [], 'Select your name first'); clearAll();
+  });
+});
+$('who').addEventListener('change', function () {
+  var k = ROLEKEY[role()], me = $('who').value;
+  fill($('seat'), [], 'Select your name first'); clearAll();
+  if (!me) return;
+  SEATS = [];
+  inRegion().forEach(function (r) {
+    if (r[k].trim() !== me) return;
+    if (!SEATS.some(function (s) { return s.hq === r.hq && s.l0 === r.l0.trim(); })) SEATS.push({ hq: r.hq, l0: r.l0.trim() });
+  });
+  if (role() === 'L0') { loadSeats(SEATS); return; }          // L0: everything assigned to them, straight away
+  fill($('seat'), SEATS.map(function (s, i) { return String(i); }), 'Select BDM / HQ',
+       SEATS.map(function (s) { return s.hq + ' - ' + (isVacant(s.l0) ? 'VACANT' : s.l0); }));
+  if (SEATS.length === 1) { $('seat').value = '0'; $('seat').dispatchEvent(new Event('change')); }
+});
+$('seat').addEventListener('change', function () {
+  clearAll();
+  var s = SEATS[Number($('seat').value)];
+  if (s) loadSeats([s]);
+});
+
+/* ---- seats -> doctors + both quantity sources (refreshed on every change) ---- */
+function loadSeats(seats) {
+  ACTIVE = seats;
+  PRODUCTS = []; STOCKISTS = [];
+  $('warn').style.display = 'none'; $('stkNote').textContent = '';
+  var tok = ++loadToken;
+  var l0 = seats.length ? seats[0].l0 : '';
+  var stockists = [];
+  seats.forEach(function (s) {
+    inRegion().forEach(function (r) {
+      if (r.hq === s.hq && r.l0.trim() === s.l0 && r.stockist) stockists.push({ name: r.stockist, sr: r.sr, hq: r.hq });
+    });
+  });
+  if (!stockists.length) {
+    $('stkNote').textContent = 'No stockist is mapped to this assignment in the Assignments tab.';
+    setTable('<tr><td colspan="4" class="empty">No stockist mapped, so there are no quantities to show.</td></tr>');
+  } else {
+    setTable('<tr><td colspan="4" class="empty">Loading free and discounted quantities...</td></tr>');
+    google.script.run
+      .withSuccessHandler(function (a) {
+        if (tok !== loadToken) return;                  // selection changed meanwhile - drop this answer
+        PRODUCTS = a.products; STOCKISTS = a.stockists || [];
+        if (a.warnings && a.warnings.length) { $('warn').textContent = a.warnings.join(' '); $('warn').style.display = 'block'; }
+        renderTable(); resetLines();
+      })
+      .withFailureHandler(function (e) {
+        if (tok !== loadToken) return;
+        setTable('<tr><td colspan="4" class="empty" style="color:#b3261e">Could not load quantities: ' + esc(e.message) + '</td></tr>');
+      })
+      .getAvailabilityMulti(stockists);
+  }
+
+  if (isVacant(l0)) { $('docHint').textContent = '(BDM seat is vacant - type the name)'; return; }
+  $('docHint').textContent = '(loading...)';
+  google.script.run
+    .withSuccessHandler(function (docs) {
+      if (tok !== loadToken) return;
+      DOCS = docs;
+      $('docList').innerHTML = docs.map(function (d) { return '<option value="' + esc(d.name) + '">' + esc(d.spec) + ' #' + d.code + '</option>'; }).join('');
+      $('docHint').textContent = docs.length ? '(' + docs.length + ' doctors assigned)' : '(none found - type the name)';
+    })
+    .withFailureHandler(function () { $('docHint').textContent = '(list unavailable - type the name)'; })
+    .getDoctors(l0, seats[0].hq);
+  if (!isVacant(l0)) loadChemists('');                 // the BDM's chemists are available straight away
+}
+
+/* ---- read-only table ---- */
+function renderTable() {
+  var withQty = PRODUCTS.map(function (p) { return p.stockist; });
+  var none = STOCKISTS.filter(function (n) { return withQty.indexOf(n) === -1; });
+  var rows = PRODUCTS.map(function (p) {
+    return '<tr><td>' + esc(p.stockist) + '</td><td>' + esc(p.product) + '</td><td class="num">' + p.free + '</td><td class="num">' + p.disc + '</td></tr>';
+  }).join('') + none.map(function (n) {
+    return '<tr><td>' + esc(n) + '</td><td colspan="3" class="empty" style="text-align:left">No free or discounted quantity on record in ' + esc(DATA.month) + '.</td></tr>';
+  }).join('');
+  setTable(rows || '<tr><td colspan="4" class="empty">No eligible products.</td></tr>');
+}
+
+/* ---- free qty distributed lines (doctor / chemist section) ---- */
+// Only products that have free quantity left for the chosen stockist.
+function productsFor(stockist) {
+  return PRODUCTS.filter(function (p) { return p.stockist === stockist && p.freeLeft > 0; })
+                 .map(function (p) { return { name: p.product, left: p.freeLeft }; });
+}
+// All products are listed at once (no dropdown); the L0 types a quantity against the ones they gave.
+function renderList() {
+  var st = $('entStockist').value;
+  if (!st) { $('plist').innerHTML = '<tr><td colspan="2" class="empty">' + (STOCKISTS.length ? 'Select a stockist to see the products.' : 'Select your name first.') + '</td></tr>'; return; }
+  var list = productsFor(st);
+  if (!list.length) { $('plist').innerHTML = '<tr><td colspan="2" class="empty">This stockist has no free products.</td></tr>'; return; }
+  $('plist').innerHTML = list.map(function (p, i) {
+    return '<tr><td>' + esc(p.name) + ' <span class="hint">(free left ' + p.left + ')</span>' + '</td>' +
+           '<td><input type="number" class="qt" min="0" step="1" inputmode="numeric" data-p="' + i + '"></td></tr>';
+  }).join('');
+}
+function resetLines() {
+  fill($('entStockist'), STOCKISTS, STOCKISTS.length ? 'Select stockist' : 'Select your name first');
+  if (STOCKISTS.length === 1) $('entStockist').value = STOCKISTS[0];
+  renderList();
+}
+$('entStockist').addEventListener('change', renderList);
+$('plist').addEventListener('input', function (e) {
+  var t = e.target; if (!t.classList.contains('qt')) return;
+  var meta = PRODUCTS.filter(function (p) { return p.stockist === $('entStockist').value && p.product === t.closest('tr').firstChild.firstChild.textContent.trim(); })[0];
+  var bad = t.value !== '' && (isNaN(t.value) || Number(t.value) < 0 || Number(t.value) % 1 || (meta && Number(t.value) > meta.freeLeft));
+  t.className = 'qt' + (bad ? ' bad' : '');
+});
+
+/* ---- chemists: linked to the chosen doctor first, then this BDM's other chemists ---- */
+function loadChemists(code) {
+  var s = ACTIVE[0]; if (!s) return;
+  var tok = loadToken;
+  google.script.run.withSuccessHandler(function (r) {
+    if (tok !== loadToken) return;
+    var all = r.linked.concat(r.others);
+    $('chemList').innerHTML = all.map(function (n) { return '<option value="' + esc(n) + '">'; }).join('');
+    $('chemHint').textContent = r.linked.length ? '(' + r.linked.length + ' linked to this doctor, ' + r.others.length + ' more from this BDM - or type)'
+                              : all.length ? '(no chemist linked to this doctor - showing ' + all.length + ' from this BDM, or type)'
+                              : '(none on record - type the name)';
+    if (r.linked.length === 1 && !$('chemist').value) $('chemist').value = r.linked[0];
+  }).withFailureHandler(function () { $('chemHint').textContent = '(list unavailable - type the name)'; })
+    .getChemists(code || '', s.l0, s.hq);
+}
+function onDoctor() {
+  var d = DOCS.filter(function (x) { return x.name === $('doctor').value; })[0];
+  if (d) loadChemists(d.code);
+}
+$('doctor').addEventListener('input', onDoctor);
+$('doctor').addEventListener('change', onDoctor);
+
+function clearAll() {
+  loadToken++; PRODUCTS = []; STOCKISTS = []; DOCS = []; ACTIVE = [];
+  $('stkNote').textContent = '';
+  setTable('<tr><td colspan="4" class="empty">Select your name to load quantities.</td></tr>');
+  $('warn').style.display = 'none';
+  ['doctor', 'chemist'].forEach(function (i) { $(i).value = ''; });
+  $('docList').innerHTML = ''; $('chemList').innerHTML = ''; $('docHint').textContent = ''; $('chemHint').textContent = '';
+  resetLines();
+}
+resetLines();
+
+$('pod').addEventListener('change', function () {
+  var fs = Array.prototype.slice.call($('pod').files), t = 0;
+  fs.forEach(function (f) { t += f.size; });
+  $('podInfo').textContent = fs.length ? fs.length + ' file' + (fs.length > 1 ? 's' : '') + ', ' + mb(t) + ' in total' : '';
+});
+
+/* ---- save ---- */
+$('f').addEventListener('submit', function (e) {
+  e.preventDefault();
+  if (!role() || !$('who').value || !ACTIVE.length) return show('Select region, role and your name first.', 'err');
+  if (!$('doctor').value.trim()) return show('Enter the doctor name.', 'err');
+  if (!$('chemist').value.trim()) return show('Enter the chemist / pharmacy name.', 'err');
+
+  var lines = [], bad = '', st = $('entStockist').value;
+  if (!st) return show('Select the stockist.', 'err');
+  var list = productsFor(st);
+  document.querySelectorAll('#plist .qt').forEach(function (inp) {
+    if (inp.value === '') return;                               // product not given
+    var pr = list[Number(inp.dataset.p)].name, q = Number(inp.value);
+    if (isNaN(q) || q <= 0 || q % 1) { bad = pr + ': enter a whole number above 0.'; return; }
+    var meta = PRODUCTS.filter(function (p) { return p.stockist === st && p.product === pr; })[0];
+    if (meta && q > meta.freeLeft) { bad = pr + ': free qty cannot exceed ' + meta.freeLeft + '.'; return; }
+    lines.push({ stockist: st, sr: meta ? meta.sr : srOf(st), product: pr, free: q });
+  });
+  if (bad) return show(bad, 'err');
+  if (!lines.length) return show('Enter the free quantity given for at least one product.', 'err');
+
+  var picked = Array.prototype.slice.call($('pod').files), total = 0;
+  if (!picked.length) return show('Attach the POD (proof of delivery).', 'err');
+  if (picked.length > MAX_FILES) return show('Attach at most ' + MAX_FILES + ' POD files.', 'err');
+  for (var fi = 0; fi < picked.length; fi++) {
+    if (TYPES.indexOf(picked[fi].type) === -1) return show(picked[fi].name + ': POD must be a PDF, JPG or PNG file.', 'err');
+    if (picked[fi].size > MAX) return show(picked[fi].name + ' is ' + mb(picked[fi].size) + ' - each file must be 20 MB or less.', 'err');
+    total += picked[fi].size;
+  }
+  if (total > MAX_TOTAL) return show('The files together are ' + mb(total) + ' - the total must be 25 MB or less.', 'err');
+
+  $('go').disabled = true; show('Uploading POD and saving...', 'ok');
+  function readFile(f) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onerror = function () { reject(new Error('Could not read ' + f.name + '. Please attach it again.')); };
+      r.onload = function () { resolve({ name: f.name, mime: f.type, base64: String(r.result).split(',')[1] }); };
+      r.readAsDataURL(f);
+    });
+  }
+  Promise.all(picked.map(readFile)).then(function (pods) {
+    var hqs = uniq(ACTIVE.map(function (s) { return s.hq; })), l0 = ACTIVE[0].l0;
+    var payload = {
+      entryId: entryId, region: $('region').value, role: role(), submitter: $('who').value,
+      hq: hqs.join(', '), bdm: isVacant(l0) ? 'VACANT' : l0,
+      doctor: $('doctor').value.trim(), chemist: $('chemist').value.trim(), lines: lines, pods: pods
+    };
+    var seats = ACTIVE;
+    google.script.run
+      .withSuccessHandler(function (r) {
+        show(r.duplicate ? 'This entry was already saved (' + r.id + ').' : 'Saved ' + r.id + ' (' + r.rows + ' product line' + (r.rows > 1 ? 's' : '') + ', ' + r.pods + ' POD file' + (r.pods > 1 ? 's' : '') + '). You can enter the next delivery.', 'ok');
+        entryId = newId();
+        ['doctor', 'chemist', 'pod'].forEach(function (i) { $(i).value = ''; });
+        $('podInfo').textContent = '';
+        $('go').disabled = false;
+        if (ACTIVE === seats) loadSeats(seats);          // refresh quantities
+      })
+      .withFailureHandler(function (err) { $('go').disabled = false; show('Not saved: ' + err.message, 'err'); })
+      .submitDistribution(payload);
+  }).catch(function (err) { $('go').disabled = false; show(err.message, 'err'); });
+});
+
+// stockist number for a stockist name (from the Assignments rows already loaded)
+function srOf(name) {
+  var r = DATA.rows.filter(function (x) { return x.stockist === name && x.sr; })[0];
+  return r ? r.sr : '';
+}
+</script>
+</body>
+</html>
